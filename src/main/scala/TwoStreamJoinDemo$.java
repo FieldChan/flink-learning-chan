@@ -1,4 +1,4 @@
-package com.cy.join.twostreamjoin;
+package com.chan.join.twostreamjoin;
 
 /**
   * $CONTENT
