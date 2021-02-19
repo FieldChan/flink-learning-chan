@@ -25,15 +25,16 @@ public class bigOrderKafkaProducer {
         env.setParallelism(1);
         DataStream<Order> orderStream = env.addSource(new OrderGenerator())
                 .filter(Objects::nonNull);
-        orderStream.map(order ->
+        orderStream = orderStream.map(order ->
         {order.setOrderTag("bigorder");
         return order;
-        }).map(order -> JSONObject.toJSONString(order))
-                .addSink(new FlinkKafkaProducer(
+        });
+        orderStream.map(order -> JSONObject.toJSONString(order)).addSink(new FlinkKafkaProducer(
                         "localhost:9092",
                         "big_order",
                         new SimpleStringSchema()
                 )).name("flink-bigorder-kafka");
+        orderStream.print();
 
         env.execute("flink big_order");
     }

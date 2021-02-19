@@ -48,7 +48,7 @@ public class kafkaJoinMysql {
                 "    createTime BIGINT,\n" +
                 "    proctime as PROCTIME()\n" +
                 ") WITH (\n" +
-                " 'connector' = 'kafka-0.11',\n" +
+                " 'connector' = 'kafka',\n" +
                 " 'topic' = 'big_order',\n" +
                 " 'properties.bootstrap.servers' = 'localhost:9092',\n" +
                 " 'properties.group.id' = 'testGroup',\n" +
@@ -73,26 +73,15 @@ public class kafkaJoinMysql {
                 "    'table-name' = 'order_detail',\n" +
                 "    'driver' = 'com.mysql.jdbc.Driver',\n" +
                 "    'username' = 'root',\n" +
-                "    'password' = '516516',\n" +
-                "    'sink.buffer-flush.interval' = '1s'\n" +
+                "    'password' = '516516'\n" +
+//                "    'sink.buffer-flush.interval' = '1s'\n" +
                 ")";
 
 //        String sql = "select * from city  limit 10";
 //        String sql1 = "select * from big_order ";
 //        String sql2 = "select * from order_detail ";
-//        String sql2 = "INSERT INTO order_detail\n" +
-//                "SELECT\n" +
-//                "    a.orderId,\n" +
-//                "    a.cityId,\n" +
-//                "    b.Name As cityName,\n" +
-//                "    a.goodsId,\n" +
-//                "    a.userId,\n" +
-//                "    a.price,\n" +
-//                "    a.createTime\n" +
-//                "FROM big_order As a\n" +
-//                "inner join city FOR SYSTEM_TIME AS OF a.proctime AS b\n" +
-//                "ON a.cityId = b.ID";
-        String sql2 = "SELECT\n" +
+        String sql2 = "INSERT INTO order_detail\n" +
+                "SELECT\n" +
                 "    a.orderId,\n" +
                 "    a.cityId,\n" +
                 "    b.Name As cityName,\n" +
@@ -103,19 +92,72 @@ public class kafkaJoinMysql {
                 "FROM big_order As a\n" +
                 "inner join city FOR SYSTEM_TIME AS OF a.proctime AS b\n" +
                 "ON a.cityId = b.ID";
+        String sql3 = "INSERT INTO order_detail\n" +
+                "SELECT\n" +
+                "    a.orderId,\n" +
+                "    a.cityId,\n" +
+                "    cast(a.cityId+1 as varchar) as cityName,\n" +
+                "    b.goodsId,\n" +
+                "    b.userId,\n" +
+                "    a.price,\n" +
+                "    a.createTime\n" +
+                "FROM big_order As a\n" +
+                "inner join order_detail FOR SYSTEM_TIME AS OF a.proctime AS b\n" +
+                "ON a.orderId = b.orderId";
+        String sql4 = "INSERT INTO order_detail\n" +
+                "(\n" +
+                "cityId,\n" +
+                "cityName,\n" +
+                "goodsId,\n" +
+                "userId,\n" +
+                "price,\n" +
+                "createTime,\n" +
+                "orderId\n" +
+                ")\n" +
+                "SELECT\n" +
+                "    a.cityId,\n" +
+                "    cast(a.cityId+1 as varchar) as cityName,\n" +
+                "    b.goodsId,\n" +
+                "    b.userId,\n" +
+                "    a.price,\n" +
+                "    a.createTime,\n" +
+                "    a.orderId\n" +
+                "FROM big_order As a\n" +
+                "inner join order_detail FOR SYSTEM_TIME AS OF a.proctime AS b\n" +
+                "ON a.orderId = b.orderId";
+//        String sql2 = "SELECT\n" +
+//                "    a.orderId,\n" +
+//                "    a.cityId,\n" +
+//                "    b.Name As cityName,\n" +
+//                "    a.goodsId,\n" +
+//                "    a.userId,\n" +
+//                "    a.price,\n" +
+//                "    a.createTime\n" +
+//                "FROM big_order As a\n" +
+//                "inner join city FOR SYSTEM_TIME AS OF a.proctime AS b\n" +
+//                "ON a.cityId = b.ID";
         /*
 INSERT INTO order_detail
+(
+cityId,
+cityName,
+goodsId,
+userId,
+price,
+createTime,
+orderId
+)
 SELECT
-    a.orderId,
     a.cityId,
-    b.Name As cityName,
-    a.goodsId,
-    a.userId,
+    cast(a.cityId+1 as varchar) as cityName,
+    b.goodsId,
+    b.userId,
     a.price,
-    a.createTime
+    a.createTime,
+    a.orderId
 FROM big_order As a
-inner join city FOR SYSTEM_TIME AS OF a.proctime AS b
-ON a.cityId = b.ID
+inner join order_detail FOR SYSTEM_TIME AS OF a.proctime AS b
+ON a.orderId = b.orderId
          */
 
 
@@ -124,18 +166,23 @@ ON a.cityId = b.ID
         bsTableEnv.executeSql(ddlSink);
 //        bsTableEnv.executeSql(sql).print();
 //        bsTableEnv.executeSql(sql1).print();
-        Table tb = bsTableEnv.sqlQuery(sql2);
-        DataStream<Row> dsRow = bsTableEnv.toAppendStream(tb, Row.class);
-        dsRow.print();
-        dsRow.map(r -> new OrderDetail(
-                r.getField(0).toString(),
-                Integer.parseInt(r.getField(1).toString()),
-                r.getField(2).toString(),
-                Integer.parseInt(r.getField(3).toString()),
-                r.getField(4).toString(),
-                Integer.parseInt(r.getField(5).toString()),
-                0)
-        ).addSink(new Sink2MySQLOrderDetail());
+//        Table tb = bsTableEnv.sqlQuery(sql2);
+//        bsTableEnv.executeSql(sql2);
+        bsTableEnv.executeSql(sql3);
+//        bsTableEnv.executeSql(sql4);
+//        //table转stream
+//        DataStream<Row> dsRow = bsTableEnv.toAppendStream(tb, Row.class);
+//        dsRow.print();
+//        //sink
+//        dsRow.map(r -> new OrderDetail(
+//                r.getField(0).toString(),
+//                Integer.parseInt(r.getField(1).toString()),
+//                r.getField(2).toString(),
+//                Integer.parseInt(r.getField(3).toString()),
+//                r.getField(4).toString(),
+//                Integer.parseInt(r.getField(5).toString()),
+//                0)
+//        ).addSink(new Sink2MySQLOrderDetail());
 
         bsEnv.execute("Blink Stream SQL demo ");
     }
