@@ -81,28 +81,32 @@ public class DynamicAlertFunction
       throws Exception {
 
     long currentEventTime = value.getWrapped().getEventTime();
-
+    //首先将每个新事件添加到我们的窗口状态：
     addToStateValuesSet(windowState, currentEventTime, value.getWrapped());
 
     long ingestionTime = value.getWrapped().getIngestionTimestamp();
     ctx.output(Descriptors.latencySinkTag, System.currentTimeMillis() - ingestionTime);
-
+    //检索先前广播的规则，需要根据该规则计算传入的交易数据
     Rule rule = ctx.getBroadcastState(Descriptors.rulesDescriptor).get(value.getId());
 
     if (noRuleAvailable(rule)) {
       log.error("Rule with ID {} does not exist", value.getId());
       return;
     }
-
+    //根据该规则计算传入的交易数据
     if (rule.getRuleState() == Rule.RuleState.ACTIVE) {
+        //计算窗口开始时间时间戳 = 当前事件时间戳 - 规则中定义的窗口长度
       Long windowStartForEvent = rule.getWindowStartFor(currentEventTime);
-
+        //使用 ctx.timerService().registerEventTimeTimer() 注册一个清理计时器。当它要移出范围时，此计时器将负责删除当前数据。
       long cleanupTime = (currentEventTime / 1000) * 1000;
       ctx.timerService().registerEventTimeTimer(cleanupTime);
-
+        //根据传入的规则中aggregatorFunctionType字段获取聚合函数，支持SUM MIN MAX AVG
       SimpleAccumulator<BigDecimal> aggregator = RuleHelper.getAggregator(rule);
+      //迭代所有窗口状态并应用聚合函数来计算聚合值
       for (Long stateEventTime : windowState.keys()) {
+          //状态是否在窗口内，通过  窗口开始事件时间 <=状态的事件时间<= 当前事件时间 来判断
         if (isStateValueInWindow(stateEventTime, windowStartForEvent, currentEventTime)) {
+            //应用聚合函数来计算聚合值
           aggregateValuesInState(stateEventTime, aggregator, rule);
         }
       }
@@ -121,6 +125,7 @@ public class DynamicAlertFunction
               + ruleResult);
 
       if (ruleResult) {
+          //统计数量并且重置，清除所有状态
         if (COUNT_WITH_RESET.equals(rule.getAggregateFieldName())) {
           evictAllStateElements();
         }
@@ -176,14 +181,17 @@ public class DynamicAlertFunction
     return stateEventTime >= windowStartForEvent && stateEventTime <= currentEventTime;
   }
 
+  //计算聚合值
   private void aggregateValuesInState(
       Long stateEventTime, SimpleAccumulator<BigDecimal> aggregator, Rule rule) throws Exception {
     Set<Transaction> inWindow = windowState.get(stateEventTime);
+    //统计count数量
     if (COUNT.equals(rule.getAggregateFieldName())
         || COUNT_WITH_RESET.equals(rule.getAggregateFieldName())) {
       for (Transaction event : inWindow) {
         aggregator.add(BigDecimal.ONE);
       }
+      //按照聚合函数计算聚合值
     } else {
       for (Transaction event : inWindow) {
         BigDecimal aggregatedValue =
