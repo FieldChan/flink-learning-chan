@@ -71,6 +71,11 @@ under the License.
             <artifactId>flink-table-planner_2.11</artifactId>
             <version>${flink.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-gcp-pubsub_2.11</artifactId>
+            <version>1.11.2</version>
+        </dependency>
         <!--<dependency>-->
             <!--<groupId>org.apache.flink</groupId>-->
             <!--<artifactId>flink-table-api-java-bridge_2.11</artifactId>-->
@@ -101,11 +106,11 @@ under the License.
             <version>${flink.version}</version>
         </dependency>
         -->
-        <!--<dependency>-->
-            <!--<groupId>org.apache.flink</groupId>-->
-            <!--<artifactId>flink-connector-kafka-0.11_${scala.binary.version}</artifactId>-->
-            <!--<version>${flink.version}</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-kafka-0.11_${scala.binary.version}</artifactId>
+            <version>${flink.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-connector-kafka_2.11</artifactId>
@@ -144,6 +149,11 @@ under the License.
         </dependency>
         <!-- Add logging framework, to produce console output when running in the IDE. -->
         <!-- These dependencies are excluded from the application JAR by default. -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-cep-scala_2.11</artifactId>
+            <version>${flink.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
